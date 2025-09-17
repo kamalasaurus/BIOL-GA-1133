@@ -6,7 +6,7 @@ This is the repo for Machine Learning in Medicine and Biology.
 
 Use either **Command Line** or **GitHub Desktop**. Follow all three stages: **Cloning → Branching → Submitting**. Your branch name must be **your GitHub username** (e.g., `octocat`).
 
-> 📁 Put your work in: `homework/<github-username>/HW#` (for example, `homework/alex-lee/HW1`).
+> 📁 Put your work in: `students/<github-username>/HW#` (for example, `students/kamalasaurus/HW1`).
 
 ---
 
@@ -30,14 +30,14 @@ git switch -c <github-username>
 
 Create your personal folder and add your files:
 ```
-homework/
+students/
 └── <github-username>/
     └── HW1/
 ```
 
 ### 3) Submitting (add → commit → push → pull request)
 ```bash
-git add homework/<github-username>/**
+git add students/<github-username>/**
 git commit -m "Add HW1 in homework/<github-username>/"
 git push -u origin <github-username>
 ```
@@ -70,8 +70,8 @@ Then open the repository on GitHub and **Create a Pull Request** from `<github-u
 ![Folder structure](./assets/folder_structure.png)
 
 - **Branch name:** your exact **GitHub username** (no spaces).
-- **Folder:** `homework/<github-username>/HW#` (e.g., `homework/kamalasaurus/HW1`).
-- **Commit message:** short & informative (e.g., `Add HW1 (logistic regression)`).
+- **Folder:** `students/<github-username>/HW#` (e.g., `students/kamalasaurus/HW1`).
+- **Commit message:** short & informative (e.g., `Add HW1 (linear regression)`).
 - **PR target:** **into `main`** from **`<github-username>`**.
 
 ---
