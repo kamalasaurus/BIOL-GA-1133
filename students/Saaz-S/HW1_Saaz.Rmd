@@ -1,0 +1,263 @@
+---
+title: "Homework1 - Machine Learning"
+output: html_document
+author: Kamal
+---
+
+# Homework 1
+## Saaz (ss9204)
+
+### Some informative viewing
+I highly recommend watching this series by 3blue1brown to get a sense of what matrix operations are from a vector space perspective and how to visualize them: [Essence of Linear Algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) .  So far, we will cover the first 4 videos in the series, the rest are enrichment ...or review if you've already done statistics.  We might cover topics like convolution and polynomial multiplication when we get to deep learning, which are a bit different from the vector representation of matrices.  The foundation you build here will be helpful then.
+
+### Matrix Multiplication (2.5pts)
+
+You are a linear algebra expert from Youtube university and have been hired by a local space cadet to help them navigate some vector spaces. They have provided you with the following matrices:
+
+```{r input}
+A <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+B <- matrix(c(7, 8, 9, 10, 11, 12), nrow = 3, byrow = TRUE)
+```
+
+1. Compute the matrix product \(C = AB\). What are the dimensions of \(C\)? (0.5pts)
+
+```{r product}
+C = A %*% B
+
+dim(C)
+```
+
+2. Compute the outer product of the first column of \(A\) with the first row of \(B\). What is the result? (0.5pts)
+
+```{r outer}
+D=A[,1]%o%B[1,]
+print(D)
+```
+
+3. Verify that the matrix product \(C\) can be expressed as a sum of outer products of the columns of \(A\) and the rows of \(B\). (0.5pts)
+
+```{r outer_manual}
+opsum=A[,1]%o%B[1,] + A[,2]%o%B[2,] + A[,3]%o%B[3,]
+
+vermatrix=opsum-C
+print(vermatrix)
+```
+
+4. Explain in your own words the relationship between matrix multiplication and outer products. (0.5pts)
+
+5. Implement a function that takes two matrices as input and returns their product using the outer product method. (0.5pts)
+
+```{r outer_func}
+matrix_multiply_outer <- function(A, B) {
+  
+  #these must be the same
+  r=ncol(A)
+  c=nrow(B)
+
+  #initialise empty matrix
+  product=matrix(0,nrow=nrow(A),ncol=ncol(B))
+
+  #sum the outer products iteratively
+  for (i in (1:r)) {
+    op=A[,i]%o%B[i,]
+    product = product + op 
+  }
+  return(product)
+}
+
+Cprime=matrix_multiply_outer(A,B)
+print(Cprime)
+```
+
+### Chick-Weight (7.5pts)
+You are a farmer named Bob and your chickens are getting too fat.  Analyze the ChickWeight dataset in R before your chickens get taken away by the ASPCA. Your task is to explore the relationship between diet and weight gain over time in chicks. Perform the following analyses:
+
+Load the ChickWeight dataset and display its structure.  If it's not already included, you can load the attached chick_weight.csv
+
+```{r setup_chickweight}
+library(ggplot2)
+library(ggcorrplot)
+library(dplyr)
+
+data("ChickWeight")
+str(ChickWeight)
+head(ChickWeight)
+```
+
+1. Create a summary table showing the average weight of chicks for each diet at each time point. (0.5pts)
+
+```{r summtable}
+summarytable=aggregate(ChickWeight$weight,list(ChickWeight$Diet, ChickWeight$Time),mean)
+colnames(summarytable)=c("Diet","Timepoint","Avg weight")
+head(summarytable)
+
+#table2=aggregate(formula= weight ~ Diet + Time, FUN=mean, data=ChickWeight)
+```
+
+  2. Visualize the weight gain over time for each diet using a line plot with error bars representing the standard error of the mean using ggplot. (0.5pts)
+
+```{r weightgraph}
+
+#After some googling, I realised the summary I made above could have been done this way too. But I don't like %>% notation.
+
+chick_summary <- ChickWeight %>%
+  group_by(Time, Diet) %>%
+  summarise(
+    mean_weight = mean(weight),
+    se_weight = sd(weight) / sqrt(n())
+  )
+
+
+ggplot(chick_summary, aes(x = Time, y = mean_weight, color = Diet, group = Diet)) +
+  geom_line() + geom_errorbar(aes(ymin = mean_weight - se_weight, ymax = mean_weight + se_weight), width = 0.3) + theme_bw()
+
+```
+
+3. Use the ggcorrplot package to create a correlation heatmap of the numeric variables in the dataset.  Convert the diet column to dummy variables (columns) and include them in the correlation analysis. (1pts)
+
+```{r correlations}
+#Convert diet to dummy variables, one in each column
+#First remove non-numeric variables
+chicknumeric=ChickWeight[,c(1:2)]
+l=nrow(ChickWeight)
+diet1=as.numeric(vector(length=l))
+diet2=as.numeric(vector(length=l))
+diet3=as.numeric(vector(length=l))
+diet4=as.numeric(vector(length=l))
+
+for (i in (1:l)) {
+  if (ChickWeight$Diet[i]==1) {
+    diet1[i]=1
+  }
+  if (ChickWeight$Diet[i]==2) {
+    diet2[i]=1
+  }
+  if (ChickWeight$Diet[i]==3) {
+    diet3[i]=1
+  }
+  if (ChickWeight$Diet[i]==4) {
+    diet4[i]=1
+  }
+}
+chicknumeric$Diet1=diet1
+chicknumeric$Diet2=diet2
+chicknumeric$Diet3=diet3
+chicknumeric$Diet4=diet4
+
+#Perform correlation
+chick_corr=cor(chicknumeric)
+
+ggcorrplot(chick_corr)
+```
+
+4.  Calculate a slope coefficient for each diet and time combination using a custom function.  HINT:  use the lm() function inside calculate slope and add 0+ in the front of the independent variables to get slopes for all but no intercepts, otherwise the lm function will drop one of the diet columns to avoid collinearity. (1pts)
+
+```{r}
+calculate_slope <- function(data) {
+  model = lm(weight ~ 0 + Time:Diet, data=data)
+  return(model)
+}
+
+slopes = calculate_slope(ChickWeight)
+summary(slopes)
+```
+
+5.  Write a function that calculates residual sum of squares (RSS), and then compare the minimal value to find the optimal slopes for each parameter and parameter combination. (1pts)
+
+```{r}
+
+calculate_rss <- function(model, data) {
+  
+  res=residuals(model)
+  rss=sum(res*res)
+  #is this it?? seems too easy. But both stackoverflow and chatgpt suggested residuals^2 is the answer.
+
+  return(rss)
+}
+
+modelRSS=calculate_rss(slopes,ChickWeight)
+print(modelRSS)
+
+```
+
+# You can loop through different models and calculate RSS for each
+# to find the optimal slopes for each parameter and parameter combination.
+# You can work through it manually as well
+```{r}
+#not sure what the loop would be here.
+
+#diet-only model
+dietmodel=lm(weight ~ Diet, data=ChickWeight)
+ 
+#time-only model
+timemodel=lm(weight~ Time, data=ChickWeight)
+
+#we already have diet-time interaction model, saved as "slopes"
+
+dietonlyRSS=calculate_rss(dietmodel,ChickWeight)
+timeonlyRSS=calculate_rss(timemodel,ChickWeight)
+print(dietonlyRSS)
+print(timeonlyRSS)
+print(modelRSS)
+#Diet:Time has least RSS
+```
+
+6.  Use anova to compare the RSS to see if they're significant -- compare the F statistic.  Use the built in anova function.  (0.5pts)
+
+```{r}
+#comparing the models pair-wise
+
+anova1=anova(dietmodel,timemodel)
+anova2=anova(timemodel,slopes)
+anova3=anova(dietmodel,slopes)
+
+print(anova1)
+print(anova2)
+print(anova3)
+#I'm not sure why p-values are not being shown for anova1 and anova3. anova2 indicates the time:diet model is much better than the time model.
+```
+
+7. Fit a linear model to assess the effect of diet and time on weight.  Use backwards selection to find the best model just against the p-values of the coefficients.  Use the same approach with the 0 + leading the independent variables to ensure all lines are present. (1pts)
+
+```{r}
+diettimemodel=lm(weight ~ 0 + Diet + Time, data=ChickWeight)
+fullmodelsummary=summary(diettimemodel)
+print(fullmodelsummary)
+
+#couldn't figure out backwards selection. missed that lecture and couldn't understand AI output, so not using it.
+```
+
+8. Iteratively enhance with backwards selection.  When the F statistic becomes insignificant, stop.  Do not use the step function, implement your own F test based backwards selection. (1pts)
+
+```{r}
+#same as above
+f_test_backward_selection <- function(full_model) {
+}
+```
+
+
+9. Create a quadratic line with just weight vs time (quadratic vs linear) -- calculate RSS with results from quadratic to see if it's better. (0.5pts)
+
+```{r}
+
+#weight~time linear model was already created above
+summary(timemodel)
+
+
+# Quadratic model, based on https://www.spsanderson.com/steveondata/posts/2023-11-17/index.html
+
+quadraticmodel=lm(weight ~ Time + I(Time^2), data = ChickWeight)
+
+# Calculate RSS for both models
+print(timeonlyRSS)
+quadraticRSS=calculate_rss(quadraticmodel, ChickWeight)
+print(quadraticRSS)
+```
+
+
+10.  Generate a null model of chick-weight to hypothetically use for forwards selection. (0.5pts)
+
+```{r}
+#same as backwards selection, i need to read to understand this.
+```
+
