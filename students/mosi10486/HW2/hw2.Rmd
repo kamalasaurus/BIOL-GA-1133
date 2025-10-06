@@ -1,0 +1,138 @@
+---
+title: "Untitled"
+author: "zimo_zhang"
+date: "2025-10-02"
+output: html_document
+---
+
+
+
+```{r}
+# Load data
+df <- read.csv("WineQT.csv", check.names = TRUE)
+
+# Separate target variable
+y <- as.matrix(df$quality)
+
+# Feature matrix (drop target column)
+feature_cols <- setdiff(names(df), "quality")
+X_features <- as.matrix(df[, feature_cols])
+
+# Add intercept column
+intercept <- rep(1, nrow(X_features))
+X <- cbind(intercept, X_features)
+
+# Standardize features (excluding intercept)
+mu <- colMeans(X_features)
+sd <- apply(X_features, 2, sd)
+sd[sd == 0] <- 1  # avoid divide by zero
+
+X_std <- sweep(X_features, 2, mu, "-")
+X_std <- sweep(X_std, 2, sd, "/")
+X_standardized <- cbind(Intercept = 1, X_std)
+
+# Check dimensions
+dim(X_standardized)
+```
+
+```{r}
+# Initialize parameters
+alpha <- 0.01       # learning rate
+T <- 2000           # number of iterations
+n <- nrow(X_standardized)
+p <- ncol(X_standardized)
+beta <- rep(0, p)
+losses <- numeric(T)
+
+# Gradient Descent Loop
+for (t in 1:T) {
+  y_hat <- X_standardized %*% beta
+  e <- y_hat - y
+  g <- (t(X_standardized) %*% e) / n
+  beta <- beta - alpha * g
+  losses[t] <- sum(e^2) / (2 * n)
+}
+
+cat("Gradient Descent Finished.\n")
+cat("Final Loss (MSE):", round(losses[T], 4), "\n\n")
+
+# Print coefficients
+feature_names <- c("Intercept", feature_cols)
+for (i in seq_along(beta)) {
+  cat(sprintf("%20s : %.4f\n", feature_names[i], beta[i]))
+}
+```
+```{r}
+# Function to run gradient descent with a given alpha
+gd_once <- function(X, y, alpha, T = 2000) {
+  n <- nrow(X); p <- ncol(X)
+  beta <- rep(0, p)
+  losses <- numeric(T)
+  
+  for (t in seq_len(T)) {
+    y_hat <- X %*% beta
+    e <- as.vector(y_hat - y)
+    g <- (t(X) %*% e) / n
+    beta <- beta - alpha * g
+    losses[t] <- sum(e^2) / (2 * n)
+  }
+  list(alpha = alpha, losses = losses)
+}
+
+# Learning rates to test
+alphas <- c(0.1, 0.05, 0.01, 0.005, 0.001)
+T <- 2000
+
+# Run for each alpha
+runs <- lapply(alphas, function(a) gd_once(X_standardized, y, a, T))
+
+# Plot Loss vs Iteration
+cols <- rainbow(length(alphas))
+plot(runs[[1]]$losses, type = "l", lwd = 2, col = cols[1],
+     xlab = "Iteration", ylab = expression(Loss~(MSE)),
+     main = "Loss vs Iteration for Different Learning Rates (α)")
+for (i in seq_along(runs)) {
+  lines(runs[[i]]$losses, col = cols[i], lwd = 2)
+}
+legend("topright", legend = paste("α =", alphas),
+       col = cols, lwd = 2, cex = 0.8)
+```
+```{r}
+#The plot shows how the Mean Squared Error (MSE) loss decreases over 2000 iterations for five different learning rates (α).
+α = 0.1 (High Learning Rate):
+The loss drops extremely fast and quickly converges to a minimum. This indicates that α = 0.1 provides fast and stable convergence without overshooting.
+α = 0.05 (Good Learning Rate):
+The loss decreases smoothly and steadily, achieving nearly the same final minimum as α = 0.1, but with slightly slower convergence.
+α = 0.01 (Safe Learning Rate):
+The loss decreases gradually and converges well, though it requires more iterations to reach the same minimum.
+α = 0.005 (Small Learning Rate):
+The model still converges, but the rate of decrease is much slower, showing delayed learning.
+α = 0.001 (Low Learning Rate):
+The loss decreases very slowly. Although it is converging, it would require  more iterations (T > 2000) to reach the optimal point, indicating very slow convergence.
+```
+
+
+```{r}
+## ---- B.5: Compare with Normal Equation ----
+
+# beta_grad comes from the previous Gradient Descent result
+beta_grad <- as.matrix(beta)
+
+# Compute Normal Equation solution: β_normal = (XᵀX)^(-1) Xᵀy
+# Use qr.solve instead of directly taking matrix inverse for numerical stability
+beta_normal <- qr.solve(X_standardized, y)
+
+# Compute L2 norm (Euclidean distance) between beta_grad and beta_normal
+l2_diff <- sqrt(sum((beta_grad - beta_normal)^2))
+
+# Print results
+cat("\n--- Comparing with Normal Equation Solution ---\n")
+cat("β_grad (from Gradient Descent):\n")
+print(round(beta_grad, 6))
+
+cat("\nβ_normal (from Normal Equation / qr.solve):\n")
+print(round(beta_normal, 6))
+
+cat(sprintf("\nL2 Norm of difference ||β_grad - β_normal||₂: %.6e\n", l2_diff))
+```
+
