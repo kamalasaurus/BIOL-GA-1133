@@ -1,0 +1,260 @@
+---
+title: "Homework1 - Machine Learning"
+output: html_document
+author: Kamal
+---
+
+# Homework 1
+## Yufei Jin
+
+### Some informative viewing
+I highly recommend watching this series by 3blue1brown to get a sense of what matrix operations are from a vector space perspective and how to visualize them: [Essence of Linear Algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) .  So far, we will cover the first 4 videos in the series, the rest are enrichment ...or review if you've already done statistics.  We might cover topics like convolution and polynomial multiplication when we get to deep learning, which are a bit different from the vector representation of matrices.  The foundation you build here will be helpful then.
+
+### Matrix Multiplication (2.5pts)
+
+You are a linear algebra expert from Youtube university and have been hired by a local space cadet to help them navigate some vector spaces. They have provided you with the following matrices:
+
+```{r}
+A <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+B <- matrix(c(7, 8, 9, 10, 11, 12), nrow = 3, byrow = TRUE)
+```
+
+1. Compute the matrix product \(C = AB\). What are the dimensions of \(C\)? (0.5pts)
+
+```{r}
+C = A %*% B # C_11=1*7+2*9+3*11=58 C_12=1*8+2*10+3*12=64 C_21=4*7+5*9+6*11=139 C_22=4*8+5*10+6*12=154
+C
+dim(C) # 2 x 2
+```
+
+2. Compute the outer product of the first column of \(A\) with the first row of \(B\). What is the result? (0.5pts)
+
+```{r}
+D = matrix(A[,1],nrow=2) %*% matrix(B[1,],nrow=1) # 2 x 2
+D
+# D_11 = 1*7=7 D_12=1*8=8 D_21=4*7=28 D_22=4*8=32
+```
+
+3. Verify that the matrix product \(C\) can be expressed as a sum of outer products of the columns of \(A\) and the rows of \(B\). (0.5pts)
+
+```{r}
+E = matrix(A[,1],nrow=2) %*% matrix(B[1,],nrow=1) + matrix(A[,2],nrow=2) %*% matrix(B[2,],nrow=1) + matrix(A[,3],nrow=2) %*% matrix(B[3,],nrow=1)
+
+E == C
+```
+
+4. Explain in your own words the relationship between matrix multiplication and outer products. (0.5pts)
+
+For any item in the matrix C_ij (C=AB), C_ij=A_i1*B_1j+A_i2*B_2j+...+A_ik*B_kj. The first item A_i1*B_1j is the value of the outer product of the first column of A and the first row of B, the second item A_i2*B_2j is the value of the outer product of the second column of A and the second row of B, and so on. So we can say that matrix multiplication is equivalent to summing up all the outer products of each column of A and each row of B for every item is corresponding.
+
+5. Implement a function that takes two matrices as input and returns their product using the outer product method. (0.5pts)
+
+```{r}
+matrix_multiply_outer <- function(A, B) {
+  stopifnot(ncol(A) == nrow(B)) # Ensure the matrices can be multiplied
+  n = ncol(A) # Number of outer products to sum
+  res = matrix(data=0,nrow=nrow(A),ncol=ncol(B))
+  for(i in 1:n) {
+    outer_product = matrix(A[,i], nrow=nrow(A)) %*% matrix(B[i,], nrow=1)
+    res = res + outer_product
+  }
+  return(res)
+}
+```
+
+```{r}
+A %*% B == matrix_multiply_outer(A, B)
+```
+
+
+### Chick-Weight (7.5pts)
+You are a farmer named Bob and your chickens are getting too fat.  Analyze the ChickWeight dataset in R before your chickens get taken away by the ASPCA. Your task is to explore the relationship between diet and weight gain over time in chicks. Perform the following analyses:
+
+Load the ChickWeight dataset and display its structure.  If it's not already included, you can load the attached chick_weight.csv
+
+```{r}
+library(ggplot2)
+library(ggcorrplot)
+library(dplyr)
+
+data("ChickWeight")
+str(ChickWeight)
+head(ChickWeight)
+
+# If you need to load from a CSV file, uncomment the line below
+# ChickWeight <- read.csv("chick_weight.csv")
+```
+
+1. Create a summary table showing the average weight of chicks for each diet at each time point. (0.5pts)
+
+```{r}
+summary_table = ChickWeight %>%
+  group_by(Diet, Time) %>% # group by Diet and Time
+    summarize(mean_weight = mean(weight), se_weight = sd(weight)/sqrt(length(weight)),.groups = 'keep') # calculate mean weight and standard error for the error bar plot
+
+summary_table
+```
+
+2. Visualize the weight gain over time for each diet using a line plot with error bars representing the standard error of the mean using ggplot. (0.5pts)
+
+```{r}
+ggplot(summary_table, aes(x = Time, y = mean_weight, color = Diet,group = Diet)) + geom_line() + geom_errorbar(aes(ymin = mean_weight - se_weight, ymax = mean_weight + se_weight))
+```
+
+3. Use the ggcorrplot package to create a correlation heatmap of the numeric variables in the dataset.  Convert the diet column to dummy variables (columns) and include them in the correlation analysis. (1pts)
+
+```{r}
+ChickWeight_dummy = ChickWeight %>% mutate(diet1 = as.numeric(Diet == 1),
+                                           diet2 = as.numeric(Diet == 2),
+                                           diet3 = as.numeric(Diet == 3),
+                                           diet4 = as.numeric(Diet == 4))
+cor_matrix = cor(ChickWeight_dummy %>% select(weight, Time, diet1, diet2, diet3, diet4))
+ggcorrplot(cor_matrix, lab = TRUE)
+```
+
+4.  Calculate a slope coefficient for each diet and time combination using a custom function.  HINT:  use the lm() function inside calculate slope and add 0+ in the front of the independent variables to get slopes for all but no intercepts, otherwise the lm function will drop one of the diet columns to avoid collinearity. (1pts)
+
+```{r}
+calculate_slope <- function(data) {
+  return(coef(lm(weight ~ 0 + Time + Diet, data = data)))
+}
+
+slopes <- calculate_slope(ChickWeight) # 4 time and 4 diet
+slopes
+```
+
+5.  Write a function that calculates residual sum of squares (RSS), and then compare the minimal value to find the optimal slopes for each parameter and parameter combination. (1pts)
+
+```{r}
+calculate_rss <- function(model, data) {
+  predictions = predict(model, newdata = data)
+  residuals = data$weight - predictions
+  rss = sum(residuals^2)
+  return(rss)
+}
+```
+
+# You can loop through different models and calculate RSS for each
+# to find the optimal slopes for each parameter and parameter combination.
+# You can work through it manually as well
+```{r}
+# I'm not sure whether I should build the model using predictors like Time+diet1+diet3 in dummied dataset. In that case, there would be 16 combinations, looks like not an effective approach.
+model1 = lm(weight ~ 0 + Time, data = ChickWeight)
+model2 = lm(weight ~ 0 + Time + Diet, data = ChickWeight)
+model3 = lm(weight ~ 0 + Time + Diet + Time:Diet, data = ChickWeight)
+rss1 = calculate_rss(model1,ChickWeight)
+rss2 = calculate_rss(model2,ChickWeight)
+rss3 = calculate_rss(model3,ChickWeight)
+```
+
+6.  Use anova to compare the RSS to see if they're significant -- compare the F statistic.  Use the built in anova function.  (0.5pts)
+
+```{r}
+anova(model1,model2,model3)
+```
+
+7. Fit a linear model to assess the effect of diet and time on weight.  Use backwards selection to find the best model just against the p-values of the coefficients.  Use the same approach with the 0 + leading the independent variables to ensure all lines are present. (1pts)
+
+```{r}
+summary(lm(weight ~ 0 + Time + Diet + Time:Diet, data = ChickWeight)) # every coefficients here are significant.
+```
+
+8. Iteratively enhance with backwards selection.  When the F statistic becomes insignificant, stop.  Do not use the step function, implement your own F test based backwards selection. (1pts)
+
+```{r}
+f_test_backward_selection <- function(full_model) {
+  terms = attr(full_model$terms, "term.labels")
+  for(term in terms){
+    reduced_model = update(full_model, as.formula(paste(". ~ . -", term)))
+    pval = anova(reduced_model,full_model)[["Pr(>F)"]][2]
+    if(is.na(pval)){  # NA means updated model is exactly the same as orginial model, we can set pval=1 to make it numeric
+      pval = 1
+    }
+    if(pval>0.05){ # stopping rule, we found an updated model
+      return(f_test_backward_selection(reduced_model)) # call recursive function
+    }
+  }
+  return(full_model) # means no need to change
+}
+```
+
+```{r}
+f_test_backward_selection(model3)
+```
+
+
+
+9. Create a quadratic line with just weight vs time (quadratic vs linear) -- calculate RSS with results from quadratic to see if it's better. (0.5pts)
+
+```{r}
+quadratic_model = lm(weight ~ Time+I(Time^2), data = ChickWeight)
+linear_model = lm(weight ~ Time, data = ChickWeight)
+rss_linear = calculate_rss(linear_model,ChickWeight)
+rss_quad = calculate_rss(quadratic_model,ChickWeight)
+rss_linear > rss_quad # so RSS is smaller if we include quadratic time.
+anova(quadratic_model,linear_model) # but RSS would always decrease if include a new item, so we need an anova test to determine whether this decreasing is significant.
+```
+
+
+10.  Generate a null model of chick-weight to hypothetically use for forwards selection. (0.5pts)
+
+```{r}
+null_model = lm(weight ~ 1, data = ChickWeight)
+summary(null_model)
+```
+
+
+### Bonus:  Show that slope of linear regression is pearsons correlation r times the ratio of standard deviations for a simple linear model. (1pts)
+
+You can show it analytically by mashing together the equations for ß_1 and r, or you can show it numerically by simulating some data and fitting a linear model and calculating the correlation coefficient and standard deviations.
+
+The equation for sd(X) in terms of sum of squares is:
+$$
+s_x = \sqrt{\frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})^2}
+$$
+where \(X\) is the predictor variable, \(n\) is the number of observations, and \(\bar{X}\) is the mean of \(X\).
+
+The equation for sd(Y) in terms of sum of squares is:
+$$
+s_y = \sqrt{\frac{1}{n-1} \sum_{i=1}^n (Y_i - \bar{Y})^2}
+$$
+where \(Y\) is the response variable, \(n\) is the number of observations, and \(\bar{Y}\) is the mean of \(Y\).
+
+The equation for cov(X,Y) is:
+$$
+cov(X, Y) = \frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})(Y_i - \bar{Y})
+$$
+where \(X\) is the predictor variable, \(Y\) is the response variable, \(n\) is the number of observations, and \(\bar{X}\) and \(\bar{Y}\) are the means of \(X\) and \(Y\), respectively.
+
+
+The equation to calculate pearson's correlation is:
+$$
+r = \frac{cov(X, Y)}{s_x s_y}
+$$
+where \(cov(X, Y)\) is the covariance between the predictor variable \(X\) and the response variable \(Y\), \(s_x\) is the standard deviation of \(X\), and \(s_y\) is the standard deviation of \(Y\).
+
+The numerical equation for ß_1 in a simple linear regression is:
+$$
+\beta_1 = \frac{\sum_{i=1}^n(x_i - \bar{x})(y_i - \bar{y})}{\sum_{i=1}^n(x_i - \bar{x})^2}
+$$
+
+
+The symbolic representation of the same equation is:
+$$
+\beta_1 = \frac{cov(X, Y)}{s_x^2}
+$$
+where \(cov(X, Y)\) is the covariance between the predictor variable \(X\) and the response variable \(Y\), and \(s_x^2\) is the variance of \(X\).
+
+
+Can you prove the following by apply in algebra with the equations above:
+$$
+\beta_1 = r \frac{s_y}{s_x}
+$$
+where \(r\) is Pearson's correlation coefficient, \(s_y\) is the standard deviation of the response variable, and \(s_x\) is the standard deviation of the predictor variable.
+
+Write the solution by hand and upload a photo of your proof; or, if using a numerical comparison, submit the code here:
+
+$$
+\beta_1 = \frac{cov(X, Y)}{s_x^2} = \frac{cov(X, Y)}{s_x s_y}\frac{s_y}{s_x}=r\frac{s_y}{s_x}
+$$ 
+
