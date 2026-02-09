@@ -1,0 +1,118 @@
+**[Homework3-Part1: Mushroom Decision Tree (Manual Calculation)]**
+
+### Dataset summary:
+- Total samples |S| = 12
+- Target y = Poisonous?: Y = 5, N = 7
+
+### Formulas
+$H(Y) = - Σ p(y) * log2 p(y)$
+
+$H(Y|A) = Σ_v (|S_v| / |S|) * H(Y in S_v)$
+
+$IG(Y, A) = H(Y) - H(Y|A)$
+
+-------------------------------------------------
+### Step 1. Target entropy H(Y)
+
+$p(Y) = 5/12, p(N) = 7/12$
+
+$H(Y) = - (5/12)*log2(5/12) - (7/12)*log2(7/12) = 0.979869$
+
+-------------------------------------------------
+
+### Step 2. Evaluate information gain for each attribute
+
+#### (1) A = x1 (size, continuous)
+
+  - Unique values: {1, 2, 3, 4, 5}
+  - Possible split points: t ∈ {1.5, 2.5, 3.5, 4.5}
+  - The best split is at t = 3.5
+
+  Left side (≤ 3.5): $|S_L| = 7 → Y = 2, N = 5 → H_L = - (2/7)*log2(2/7) - (5/7)*log2(5/7) = 0.863121$
+
+  Right side (> 3.5): $|S_R| = 5 → Y = 3, N = 2 → H_R = - (3/5)*log2(3/5) - (2/5)*log2(2/5) = 0.9709501$
+  
+  $H(Y|x1 @ 3.5) = (7/12)*0.863121 + (5/12)*0.9709501 = 0.908050$
+  $IG(Y, x1 @ 3.5) = 0.979869 - 0.908050 = 0.071819$
+
+
+#### (2) A = x2 (spots: Y/N)
+
+  $spots = N: |S_N| = 5 → Y = 0, N = 5 → H_N = 0$
+
+  $spots = Y: |S_Y| = 7 → Y = 5, N = 2 → H_Y = - (5/7)*log2(5/7) - (2/7)*log2(2/7) = 0.863121$
+
+  $H(Y|x2) = (5/12)*0 + (7/12)*0.863121 = 0.503487$
+  $IG(Y, x2) = 0.979869 - 0.503487 = 0.476382$ ← largest
+
+#### (3) A = x3 (color: White/Brown)
+  
+  $color = White: |S_W| = 6 → Y = 2, N = 4 → H_W = - (2/6)*log2(2/6) - (4/6)*log2(4/6) = 0.918296$
+
+  $color = Brown: |S_B| = 6 → Y = 3, N = 3 → H_B = - (3/6)*log2(3/6) - (3/6)*log2(3/6) = 1$
+  $H(Y|x3) = (6/12)*0.918296 + (6/12)*1 = 0.959148$
+  $IG(Y, x3) = 0.979869 - 0.959148 = 0.020721$
+
+Conclusion: Root node splits on x2 (spots: Y/N).
+
+-------------------------------------------------
+### Step 3. Continue splitting the right branch (spots: Y)
+
+$spotsY subset S_Y: |S_Y| = 7, Y = 5, N = 2, H(S_Y) = 0.863121$
+
+#### Candidate A = x1 (size 3.5)
+  In S_Y:
+  $Left side (≤ 3.5): |S_YL| = 4 → Y = 2, N = 2 → H_YL = - (2/4)*log2(2/4) - (2/4)*log2(2/4) = 1$
+  $Right side (> 3.5): |S_YR| = 3 → Y = 3, N = 0 → H_YR = 0$
+  $H(Y|x1@ 3.5, S_Y) = (4/7)*1 + (3/7)*0 = 0.571429$
+  $IG(S_Y, x1@ 3.5) = 0.863121 - 0.571429 = 0.291692$ ← largest
+
+#### Candidate B = x3 (color)
+  In S_Y:
+  $color = White: |S_YW| = 3 → Y = 2, N = 1 → H_YY = - (2/3)*log2(2/3) - (1/3)*log2(1/3) = 0.918296$
+  $color = Brown: |S_YB| = 4 → Y = 3, N = 1 → H_YN = - (3/4)*log2(3/4) - (1/4)*log2(1/4) = 0.811278$
+  $H(Y|x3, S_Y) = (3/7)*0.918296 + (4/7)*0.811278 = 0.857143$
+  $IG(S_Y, x3) = 0.863121 - 0.857143 = 0.005978$
+
+Conclusion: First node of spots: Y branch splits on x1 (size 3.5).
+
+-------------------------------------------------
+### Step 4. continue splitting the size ≤ 3.5 branch (the spots=Y side)
+
+* At this point, information gain is small, and it is reasonable to stop.
+Still, for clarity, we make one more split.
+
+$spotsY-sizeL subset S_YL: |S_Y| = 4, Y = 2, N = 2, H(S_Y) = 1$
+
+#### Candidate A = x1 (size 1.5)
+  In S_YL:
+  $Left side (≤ 1.5): |S_YLL| = 2 → Y = 2, N = 0 → H_YLL = 0$
+  $Right side (> 1.5):|S_YLR| = 2 → Y = 0, N = 2 → H_YLR = 0$
+  $H(Y|x1@ 1.5, S_YL) = (2/4)*0 + (2/4)*0 =0$
+  $IG(S_YL, x1@ 1.5) = 1 - 0 = 1$ ← largest
+
+#### Candidate B = x3 (color)
+  In S_YL:
+  $color = White: |S_YLW| = 2 → Y = 1, N = 1 → H_YLW = 1$
+  $color = Brown: |S_YLB| = 2 → Y = 1, N = 1 → H_YLB = 1$
+  $H(Y|x3, S_YL) = (2/4)*1 + (2/4)*1 =1$
+  $IG(S_YL, x3) = 1 -1 = 0$
+
+Conclusion: Second node of spots: Y branch splits on x1 (size 1.5).
+
+-------------------------------------------------
+### Step 5. Final Decision Tree (ASCII)
+
+Root: spots = Y?
+
+├── No: Leaf = Non-poisonous (N = 5, Y = 0; H = 0)
+
+└── Yes:
+
+    ├── size(> 3.5) → Leaf = Poisonous (Y = 3, N = 0; H = 0)
+
+    └── size(<= 3.5):
+
+        ├──size(> 1.5) → Leaf = Non-poisonous (Y = 0, N = 2; H = 0)
+
+        └──size(<= 1.5) → Leaf = Poisonous (Y = 2, N = 0;H = 0)
