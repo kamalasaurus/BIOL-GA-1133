@@ -1,0 +1,441 @@
+###
+#title: "Homework1 - Machine Learning"
+#output: html_document
+#author: Kamal
+###
+
+# Homework 1
+# Nathan Hill
+
+"""
+### Some informative viewing
+I highly recommend watching this series by 3blue1brown to get a sense of what
+matrix operations are from a vector space perspective and how to visualize them: 
+[Essence of Linear Algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) .
+So far, we will cover the first 4 videos in the series, the rest are enrichment ...or review if 
+you've already done statistics.  We might cover topics like convolution and polynomial multiplication 
+when we get to deep learning, which are a bit different from the vector representation of matrices.  
+The foundation you build here will be helpful then.
+"""
+
+### Matrix Multiplication (2.5pts)
+
+#You are a linear algebra expert from Youtube university and have been hired by a local space cadet 
+#to help them navigate some vector spaces. They have provided you with the following matrices:
+"""
+```{r}
+A <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+B <- matrix(c(7, 8, 9, 10, 11, 12), nrow = 3, byrow = TRUE)
+```
+"""
+
+#1. Compute the matrix product \(C = AB\). What are the dimensions of \(C\)? (0.5pts)
+import numpy as np
+#first need to use np in python to create the matrices
+A=np.array([[1,2,3],[4,5,6]])
+B=np.array([[7,8],[9,10],[11,12]])
+print(A)
+
+print(B)
+
+C=np.matmul(A,B)
+print(C)
+print(C.shape)
+#C has dimensions of 2 rows and 2 columns (2x2)
+
+#2. Compute the outer product of the first column of \(A\) with the first row of \(B\). What is the result? (0.5pts)
+A_col1=(A[:,0])
+B_row1=(B[0,:])
+OP=np.outer(A_col1,B_row1)
+print(OP)
+
+#3. Verify that the matrix product \(C\) can be expressed as a sum of outer products of the columns of \(A\)
+# and the rows of \(B\). (0.5pts)
+A_col2=(A[:,1])
+B_row2=(B[1,:])
+A_col3=(A[:,2])
+B_row3=(B[2,:])
+C_alt=np.outer(A_col1,B_row1)+np.outer(A_col2,B_row2)+np.outer(A_col3,B_row3)
+print(C_alt)
+print(C==C_alt)
+
+#4. 4. Explain in your own words the relationship between matrix multiplication and outer products. (0.5pts)
+
+#Outer products multiply each element in a vector by each one in another vector to create product vector,
+# while matrix multiplication sums the outer product of corresponding columns and rows of two input matrices.
+
+#5. Implement a function that takes two matrices as input and returns their product using the outer product method. (0.5pts)
+
+""""
+ ```{r}
+matrix_multiply_outer <- function(A, B) {
+  
+}
+```
+"""
+
+def matrix_multiply_outer(A, B):
+    C_temp=np.array(np.zeros((A.shape[0],B.shape[1])))
+    C_funct=np.array(np.zeros((A.shape[0],B.shape[1])))
+    for i in range(A.shape[1]):
+        C_temp=np.outer(A[:,i],B[i,:])
+        C_funct=C_funct+C_temp
+    return C_funct
+
+print(matrix_multiply_outer(A,B))
+
+
+### Chick-Weight (7.5pts)
+#You are a farmer named Bob and your chickens are getting too fat.  Analyze the ChickWeight dataset in R before your chickens
+#  get taken away by the ASPCA. Your task is to explore the relationship between diet and weight gain over time in chicks.
+# Perform the following analyses:
+
+#Load the ChickWeight dataset and display its structure.  If it's not already included, you can load the attached 
+# chick_weight.csv
+
+#Load the ChickWeight dataset and display its structure.  If it's not already included, you can load the attached 
+# chick_weight.csv
+import pandas as pd
+ChickWeight=pd.read_csv("chick_weight.csv", index_col=0)
+
+#1. Create a summary table showing the average weight of chicks for each diet at each time point. (0.5pts)
+print(ChickWeight.head())
+print(ChickWeight['Diet'].unique())
+print(ChickWeight['Time'].unique())
+ChickWeight.groupby(['Diet','Time'])
+
+summary_table=pd.DataFrame(columns=['Diet','Time','Average_Weight'])
+for i in ChickWeight['Diet'].unique():
+    for j in ChickWeight['Time'].unique():
+        #print(i)
+        temp_average_weight=ChickWeight[(ChickWeight['Diet']==i) & (ChickWeight['Time']==j)]['weight'].mean()
+        print(temp_average_weight) 
+        summary_table=pd.concat([summary_table, pd.DataFrame([{'Diet':i,'Time':j,'Average_Weight':temp_average_weight}])])
+print(summary_table)
+        
+#2. Visualize the weight gain over time for each diet using a line plot with error bars representing the 
+# standard error of the mean using ggplot. (0.5pts)
+
+import matplotlib.pyplot as plt
+Diet1_AW=summary_table[summary_table['Diet']==1]['Average_Weight']
+Diet2_Aw=summary_table[summary_table['Diet']==2]['Average_Weight']
+Diet3_AW=summary_table[summary_table['Diet']==3]['Average_Weight']
+Diet4_AW=summary_table[summary_table['Diet']==4]['Average_Weight']
+x=summary_table['Time'].unique()
+
+
+std_table=pd.DataFrame(columns=['Diet','Time','Standard_Deviation_Weight'])
+for i in ChickWeight['Diet'].unique():
+    for j in ChickWeight['Time'].unique():
+        #print(i)
+        temp_std_weight=ChickWeight[(ChickWeight['Diet']==i) & (ChickWeight['Time']==j)]['weight'].std()
+        print(temp_std_weight) 
+        std_table=pd.concat([std_table, pd.DataFrame([{'Diet':i,'Time':j,'Standard_Deviation_Weight':temp_std_weight}])])
+print(std_table)
+Diet1_STD=std_table[std_table['Diet']==1]['Standard_Deviation_Weight']
+Diet2_STD=std_table[std_table['Diet']==2]['Standard_Deviation_Weight']
+Diet3_STD=std_table[std_table['Diet']==3]['Standard_Deviation_Weight']
+Diet4_STD=std_table[std_table['Diet']==4]['Standard_Deviation_Weight']
+#std_weight=ChickWeight[(ChickWeight['Diet']==i) & (ChickWeight['Time']==j)]['weight'].std()
+#print(Diet1_AW)
+plt.errorbar(x, Diet1_AW, yerr=Diet1_STD, fmt='-o', label='Diet 1')
+plt.errorbar(x, Diet2_Aw, yerr=Diet2_STD, fmt='-o', label='Diet 2')
+plt.errorbar(x, Diet3_AW, yerr=Diet3_STD, fmt='-o', label='Diet 3')
+plt.errorbar(x, Diet4_AW, yerr=Diet4_STD, fmt='-o', label='Diet 4')
+plt.xlabel('Time')
+plt.ylabel('Average Weight')
+plt.title('Weight Gain Over Time by Diet')
+plt.legend()
+#plt.show()
+
+#3. Use the ggcorrplot package to create a correlation heatmap of the numeric variables in the dataset.  
+# Convert the diet column to dummy variables (columns) and include them in the correlation analysis. (1pts)
+
+import seaborn as sns
+dummy_table=pd.get_dummies(ChickWeight, columns=['Diet'], prefix='Diet')
+correlation=(dummy_table.corr())
+
+sns.heatmap(correlation,cmap='coolwarm', annot=True)
+#plt.show()
+#print(dummy_table[dummy_table.startswith('Diet_')])
+
+
+#4.  Calculate a slope coefficient for each diet and time combination using a custom function.  HINT:  
+# use the lm() function inside calculate slope and add 0+ in the front of the independent variables to 
+# get slopes for all but no intercepts, otherwise the lm function will drop one of the diet columns to avoid 
+# collinearity. (1pts)
+print('hi')
+
+import sklearn
+def calc_slopes(x):
+    slopes=[]
+    for i in dummy_table.columns:
+        if i.startswith('Diet_')==True:
+            model=sklearn.linear_model.LinearRegression()
+            X=(dummy_table.loc[dummy_table[i]==1,['Time']])
+            y=(dummy_table.loc[dummy_table[i]==1,['weight']])
+            model.fit(X, y)
+            slopes.append(model.coef_)
+    return slopes
+
+print(calc_slopes(x))
+
+
+            
+
+
+#5.  Write a function that calculates residual sum of squares (RSS), and then compare the minimal value to 
+# find the optimal slopes for each parameter and parameter combination. (1pts)
+
+# You can loop through different models and calculate RSS for each
+# to find the optimal slopes for each parameter and parameter combination.
+# You can work through it manually as well
+
+def RSS(y, y_predicted):
+    rss_total=0
+    for i in range(len(y)):
+        rss_temp=(y.iloc[i]-y_predicted[i])**2
+        rss_total=rss_total+rss_temp
+    return int(rss_total)
+
+rss_list=[]
+model=sklearn.linear_model.LinearRegression()
+X=dummy_table[['Time']]
+y=dummy_table[['weight']]
+model.fit(X, y)
+y_predicted=model.predict(X)
+        
+rss_list.append(RSS(y, y_predicted))
+
+model=sklearn.linear_model.LinearRegression()
+X=dummy_table[['Diet_1', 'Diet_2', 'Diet_3', 'Diet_4']]
+y=dummy_table[['weight']]
+model.fit(X, y)
+y_predicted=model.predict(X)
+        
+rss_list.append((RSS(y, y_predicted)))
+
+
+model=sklearn.linear_model.LinearRegression()
+X=dummy_table[['Time','Diet_1', 'Diet_2', 'Diet_3', 'Diet_4']]
+y=dummy_table[['weight']]
+model.fit(X, y)
+y_predicted=model.predict(X)
+
+rss_list.append((RSS(y, y_predicted)))
+
+dummy_table_interact=dummy_table.copy()
+dummy_table_interact['Diet_1_Time']=dummy_table['Diet_1']*dummy_table['Time']
+dummy_table_interact['Diet_2_Time']=dummy_table['Diet_2']*dummy_table['Time']
+dummy_table_interact['Diet_3_Time']=dummy_table['Diet_3']*dummy_table['Time']
+dummy_table_interact['Diet_4_Time']=dummy_table['Diet_4']*dummy_table['Time']
+
+
+model=sklearn.linear_model.LinearRegression()
+X=dummy_table_interact[['Diet_1_Time', 'Diet_2_Time', 'Diet_3_Time', 'Diet_4_Time', 'Time','Diet_1', 'Diet_2', 'Diet_3', 'Diet_4']]
+y=dummy_table[['weight']]
+model.fit(X, y)
+y_predicted=model.predict(X)
+        
+rss_list.append((RSS(y, y_predicted)))
+
+print("rss_list:")
+print(rss_list)
+
+#The lowest RSS is for the Diet*Time model
+
+
+
+#6.  Use anova to compare the RSS to see if they're significant -- compare the F statistic.  Use the 
+# built in anova function.  (0.5pts)
+
+#anova uses RSS to calculate F statistic
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.anova import anova_lm
+
+
+#time_diet_linear=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_3+Diet_4', data=dummy_table_interact).fit()
+time_diet_int_linear=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_3+Diet_4+Diet_1_Time+Diet_2_Time+Diet_3_Time+Diet_4_Time', data=dummy_table_interact).fit()
+
+print('Diet*Time model')
+print(anova_lm(time_diet_int_linear))
+
+
+#All are signficant, except for  Diet_4 and Diet_4_Time
+
+#7. Fit a linear model to assess the effect of diet and time on weight.  Use backwards selection to find 
+# the best model just against the p-values of the coefficients.  Use the same approach with the 0 + 
+# leading the independent variables to ensure all lines are present. (1pts)
+print('Fititng linear model')
+print(time_diet_int_linear.summary())
+#P val for the model is 6.28e-179
+print(time_diet_int_linear.pvalues)
+
+#Diet_3 has the highest p-value (8.112522e-01) so remove Diet_3 and Diet_3_Time
+
+
+print('Fititng linear model, back 1')
+time_diet_int_linear_back1=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_4+Diet_1_Time+Diet_2_Time+Diet_4_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back1.summary())
+#P val for the model is 6.28e-179
+print(time_diet_int_linear_back1.pvalues)
+
+#Diet_2 has the highest p-value (0.214) so remove Diet_2 and Diet_2_Time
+
+
+print('Fititng linear model, back 2')
+#print(time_linear.pvalues)
+time_diet_int_linear_back2=smf.ols('weight~0+Time+Diet_1+Diet_4+Diet_1_Time+Diet_4_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back2.summary())
+#P val for the model is 4.47e-173
+
+print(time_diet_int_linear_back2.pvalues)
+
+#Diet_4_Time has the highest p-value (0.608) so remove Diet_4_Time
+
+print('Fititng linear model, back 3')
+#print(time_linear.pvalues)
+time_diet_int_linear_back3=smf.ols('weight~0+Time+Diet_1+Diet_4+Diet_1_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back3.summary())
+#P val for the model is 2.27e-174
+
+print(time_diet_int_linear_back3.pvalues)
+
+#Diet_4 has the highest p-value (0.301) so remove Diet_4
+
+print('Fititng linear model, back 4')
+#print(time_linear.pvalues)
+time_diet_int_linear_back4=smf.ols('weight~0+Time+Diet_1+Diet_1_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back4.summary())
+#P val for the model is 1.46e-175
+print(time_diet_int_linear_back4.pvalues)
+
+#Diet_1_Time has the highest p-value (1.560342e-11) so remove Diet_1_Time
+
+print('Fititng linear model, back 5')
+#print(time_linear.pvalues)
+time_diet_int_linear_back5=smf.ols('weight~0+Time+Diet_1', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back5.summary())
+#P val for the model is 3.41e-167
+
+print(time_diet_int_linear_back5.pvalues)
+
+#Diet_1 has the highest p-value (1.417473e-03) so remove Diet_1
+
+print('Fititng linear model, back 6')
+#print(time_linear.pvalues)
+time_diet_int_linear_back6=smf.ols('weight~0+Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_back6.summary())
+#P val for the model is 1.35e-308
+
+#The 'weight~0+Time' is the final model
+
+
+#8. Iteratively enhance with backwards selection.  When the F statistic becomes insignificant, stop.  
+# Do not use the step function, implement your own F test based backwards selection. (1pts)
+#print(anova_lm(time_diet_linear, time_diet_int_linear)['Pr(>F)'][1])
+
+print('F stastitic test')
+print(time_diet_int_linear.summary())
+#F stat pval for the model is 6.28e-179
+print(anova_lm(time_diet_int_linear))
+#Drop Diet_4_Time (8.295366e-01)
+
+print('F stastitic test, back 1')
+time_diet_int_linear_fback1=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_3+Diet_4+Diet_1_Time+Diet_2_Time+Diet_3_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback1.summary())
+#F stat pval for the model is 6.28e-179
+print(anova_lm(time_diet_int_linear_fback1))
+#Drop Diet_4 (8.125962e-01)
+
+print('F stastitic test, back 2')
+time_diet_int_linear_fback2=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_3+Diet_1_Time+Diet_2_Time+Diet_3_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback2.summary())
+#F stat pval for the model is 6.28e-179
+print(anova_lm(time_diet_int_linear_fback2))
+#Drop Diet_3 (8.230790e-02) and Diet_3_Time
+
+print('F stastitic test, back 3')
+time_diet_int_linear_fback3=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_1_Time+Diet_2_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback3.summary())
+#F stat pval for the model is 1.18e-179
+print(anova_lm(time_diet_int_linear_fback3))
+#Drop Diet_2_Time (5.177057e-04)
+
+print('F stastitic test, back 4')
+time_diet_int_linear_fback4=smf.ols('weight~0+Time+Diet_1+Diet_2+Diet_1_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback4.summary())
+#F stat pval for the model is 2.11e-178
+print(anova_lm(time_diet_int_linear_fback4))
+#Drop Diet_2 (2.334237e-05)
+
+print('F stastitic test, back 5')
+time_diet_int_linear_fback5=smf.ols('weight~0+Time+Diet_1+Diet_1_Time', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback5.summary())
+#F stat pval for the model is 1.46e-175
+print(anova_lm(time_diet_int_linear_fback5))
+#Drop Diet_1_Time (1.560342e-11)
+
+print('F stastitic test, back 6')
+time_diet_int_linear_fback6=smf.ols('weight~0+Time+Diet_1', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback6.summary())
+#F stat pval for the model is 1.46e-175
+print(anova_lm(time_diet_int_linear_fback6))
+#Drop Time (7.040711e-163)
+
+print('F stastitic test, back 7')
+time_diet_int_linear_fback7=smf.ols('weight~0+Diet_1', data=dummy_table_interact).fit()
+print(time_diet_int_linear_fback7.summary())
+#F stat pval for the model is 1.46e-175
+print(anova_lm(time_diet_int_linear_fback7))
+
+#Still significant after removing all parameters except Diet 1
+
+#9. Create a quadratic line with just weight vs time (quadratic vs linear) -- calculate RSS with 
+# results from quadratic to see if it's better. (0.5pts)
+dummy_table_interact_q=dummy_table.copy()
+dummy_table_interact_q['Time_q']=dummy_table_interact_q['Time']**2
+
+rss_list_quadratic=[]
+model=sklearn.linear_model.LinearRegression()
+X_q=dummy_table_interact_q[['Time_q']]
+y_q=dummy_table_interact_q[['weight']]
+model.fit(X_q, y_q)
+y_predicted_q=model.predict(X_q)
+
+rss_list_quadratic.append(RSS(y_q, y_predicted_q))
+
+print("rss_list_quad:")
+print(rss_list_quadratic)
+
+
+rss_list_lin=[]
+model=sklearn.linear_model.LinearRegression()
+X_lin=dummy_table[['Time']]
+y_lin=dummy_table[['weight']]
+model.fit(X_lin, y_lin)
+y_predicted_lin=model.predict(X_lin)
+
+rss_list_lin.append(RSS(y_lin, y_predicted_lin))
+
+print("rss_list_lin:")
+print(rss_list_lin)
+
+#Linear has lower RSS (872212) than quadratic (904728)
+
+#10.  Generate a null model of chick-weight to hypothetically use for forwards selection. (0.5pts)
+null_model=smf.ols('weight~1', data=dummy_table_interact).fit()
+print(null_model.summary())
+
+### Bonus:  Show that slope of linear regression is pearsons correlation r times the ratio of 
+# standard deviations for a simple linear model. (1pts)
+
+#You can show it analytically by mashing together the equations for ß_1 and r, or you can show it 
+# numerically by simulating some data and fitting a linear model and calculating the correlation 
+# coefficient and standard deviations.
+
+#The equation for sd(X) in terms of sum of squares is:
+#$$
+#s_x = \sqrt{\frac{1}{n-1} \sum_{i=1}^n (X_i - \bar{X})^2}
+#$$
